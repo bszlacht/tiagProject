@@ -1,0 +1,143 @@
+import tkinter as tk
+from graph import Graph
+
+# Pomocniczo definiuje G_x, jak będzie parser, to bedziemy inaczej dzialac
+G_x = Graph()
+G_x.add_node(0, label="a")
+G_x.add_node(1, label="b")
+G_x.add_node(2, label="c")
+G_x.add_node(3, label="d")
+G_x.add_node(4, label="X")
+
+G_x.add_edges_from([(0, 4),
+                    (1, 4),
+                    (2, 4),
+                    (3, 4)])
+
+# produkcja P1 X
+R1 = Graph()
+R1.add_nodes_from([(0, {"label": "Y"}),
+                    (1, {"label": "c"}),
+                    (2, {"label": "a"})])
+R1.add_edges_from([(0, 1),
+                    (0, 2)])
+tr1 = {"a": "Y", "b": "c", "c": "Y", "d": "a", "X": "c", "Y": "Y"}
+
+# produkcja P2 X
+R2 = Graph()
+R2.add_nodes_from([(0, {"label": "X"}),
+                    (1, {"label": "b"}),
+                    (2, {"label": "d"})])
+R2.add_edges_from([(0, 1),
+                    (0, 2)])
+tr2 = {"a": "b", "b": "X", "c": "d", "d": "X", "X": "b", "Y": "X"}
+
+# produkcja P3 Y
+R3 = Graph()
+R3.add_nodes_from([(0, {"label": "Y"}),
+                    (1, {"label": "X"})])
+R3.add_edge(0, 1)
+tr3 = {"a": "X", "b": "Y", "c": "X", "d": "Y", "X": "X", "Y": "Y"}
+
+# produkcja P4 Y
+R4 = Graph()
+R4.add_nodes_from([(0, {"label": "c"})])
+tr4 = {"a": "c", "b": "c", "c": "c", "d": "c", "X": "c", "Y": "c"}
+
+
+p_arr = [("X", R1, tr1), ("Y", R3, tr3), ("X", R2, tr2), ("Y", R4, tr4)]
+
+
+def clicked():
+    print("clicked!")
+
+class Application:
+    root_graph = None
+    actual_graph = None
+    prod_array = [None]
+    prod_idx = 0
+    graph_stats = "Statistics:"
+
+
+    def __init__(self, G0, productions):
+        # Tymczasowy sposób zapisania grafu
+        self.root_graph = G0
+        self.actual_graph = G0
+        self.prod_array = productions
+
+        self.window = tk.Tk()
+        self.window.title("Visualizer")
+        self.windowWidth = 720
+        self.windowHeight = 470
+        self.window.minsize(self.windowWidth, self.windowHeight)
+        self.window.geometry(str(self.windowWidth) + "x" + str(self.windowHeight))
+
+
+        # Statystyki
+        stats_label = tk.Label(self.window, text=self.graph_stats)
+        stats_label.place(relx=(46 / 72), rely=(10 / 47))
+
+
+        # Tworze przycisk load_action, który otworzy okno do wczytania odpowiedniego pliku
+        # Pierwotny graf będzie zapisany w polu rootGraph,
+        # z kolei ciąg produkci zapiszemy w 2 polu productionArray
+        button_load = tk.Button(self.window, text="Load", command=lambda: self.load_action(stats_label))
+        button_load.pack()
+        button_load.place(relwidth=(10 / 72), relheight=(4 / 47), relx=(1 / 72), rely=(42 / 47))
+
+
+        # Tworze przycisk prod_action, ktory po kliknieciu wykona na grafie kolejna produkcje i zaktualizuje statystyki
+        button_produce = tk.Button(self.window, text="Produce", command=lambda: self.prod_action(stats_label))
+        button_produce.pack()
+        button_produce.place(relwidth=(10 / 72), relheight=(4 / 47), relx=(31 / 72), rely=(42 / 47))
+
+
+        self.window.mainloop()
+
+
+    def load_action(self, label):
+
+        # duzo kodu
+
+        self.update_stats(label)
+
+    def prod_action(self, label):
+        # W przypadku klikniecia prod_action, przed załadowaniem danych
+        if self.root_graph is None:
+            print("Please load_action your graph first")
+            return
+
+        # W przypadku gdy skończą się produkcje
+        if self.prod_idx >= len(self.prod_array):
+            print("There are no productions left :(")
+            return
+
+        self.actual_graph.produce(*self.prod_array[self.prod_idx])
+        self.prod_idx += 1
+
+        # Zaktualizuj wyświetlany obrazek
+
+        self.update_stats(label)
+
+    def update_stats(self, label):
+        new_stats = self.actual_graph.generate_stats()
+        self.graph_stats = "Statistics:\n\n"
+        for key, value in new_stats.items():
+
+            # aktualizuje wyświetlany napis
+            if key == "Średni stopień wierzchołka dla etykiet":
+                self.graph_stats += key + ":\n"
+                for key1, val1 in new_stats[key].items():
+                    self.graph_stats += key1 + " -> " + str(val1) + "\n"
+            else:
+                self.graph_stats += key + ":\n     " + str(value) + "\n"
+        label.config(text=self.graph_stats)
+
+
+
+
+def main():
+    run = Application(G_x, p_arr)
+
+if __name__ == '__main__':
+    main()
